@@ -15,7 +15,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://brandbubble.vercel.app"
+        "https://brandbubble.vercel.app",
         "https://brandbubble-one.vercel.app"
     ],
     allow_credentials=True,
