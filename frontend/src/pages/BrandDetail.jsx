@@ -137,15 +137,13 @@ function BrandDetail({ brand, onBack }) {
 
       <Container maxW="container.xl" py={6}>
         {/* Narrative */}
-        {narrative && (
-          <Box mb={6}>
-            <NarrativeCard
-              narrative={narrative}
-              loading={narrativeLoading}
-              brand={brand.display_name}
-            />
-          </Box>
-        )}
+        <Box mb={6}>
+          <NarrativeCard
+            narrative={narrative}
+            loading={narrativeLoading}
+            brand={brand.display_name}
+          />
+        </Box>
 
         {loading ? (
           <Center h="400px">
