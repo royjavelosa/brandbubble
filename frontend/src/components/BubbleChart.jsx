@@ -4,6 +4,7 @@ import { Box, Text } from "@chakra-ui/react";
 
 function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
   const svgRef = useRef(null);
+  const simulationRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
 
   useEffect(() => {
@@ -73,18 +74,38 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       volume: brand.latest_snapshot?.total_volume || 0,
       x: width / 2 + (Math.random() - 0.5) * 200,
       y: height / 2 + (Math.random() - 0.5) * 200,
+      // Each bubble gets its own wander phase so they drift independently
+      wanderAngle: Math.random() * Math.PI * 2,
+      wanderSpeed: 0.008 + Math.random() * 0.006,
+      wanderStrength: 0.25 + Math.random() * 0.2,
     }));
+
+    // Wander force: slowly rotates each bubble's personal drift angle each tick,
+    // applying a tiny nudge — produces continuous organic floating motion
+    function wanderForce() {
+      nodes.forEach((node) => {
+        node.wanderAngle += node.wanderSpeed;
+        node.vx += Math.cos(node.wanderAngle) * node.wanderStrength;
+        node.vy += Math.sin(node.wanderAngle) * node.wanderStrength;
+      });
+    }
+
+    if (simulationRef.current) simulationRef.current.stop();
 
     const simulation = d3
       .forceSimulation(nodes)
-      .force("charge", d3.forceManyBody().strength(5))
-      .force("center", d3.forceCenter(width / 2, height / 2))
+      .alphaDecay(0)          // never cool down — simulation runs forever
+      .velocityDecay(0.35)    // fluid/floaty friction (lower = more drift, higher = snappy)
+      .force("wander", wanderForce)
+      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.012))
       .force(
         "collision",
-        d3.forceCollide((d) => d.radius + 4),
+        d3.forceCollide((d) => d.radius + 3).strength(0.7),
       )
-      .force("x", d3.forceX(width / 2).strength(0.05))
-      .force("y", d3.forceY(height / 2).strength(0.05));
+      .force("x", d3.forceX(width / 2).strength(0.018))
+      .force("y", d3.forceY(height / 2).strength(0.018));
+
+    simulationRef.current = simulation;
 
     const bubbleGroup = svg.append("g");
 
@@ -150,6 +171,8 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
         return `translate(${d.x}, ${d.y})`;
       });
     });
+
+    return () => simulation.stop();
   }, [brands, dimensions, onSelectBrand, highlightedBrands]);
 
   if (!brands || brands.length === 0) {
