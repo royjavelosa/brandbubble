@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Container,
@@ -69,11 +69,16 @@ function Dashboard({ onSelectBrand }) {
 
   const resetHighlights = () => setHighlightedBrands(new Set());
 
-  const filteredBrands = (
-    showRealOnly
-      ? brands.filter((b) => b.latest_snapshot?.source_type === "real")
-      : brands
-  ).filter((b) => !hiddenBrands.has(b.name));
+  // Memoized so BubbleChart only re-initializes when brands/filters actually change,
+  // not when unrelated state like narrativeLoading updates
+  const filteredBrands = useMemo(
+    () =>
+      (showRealOnly
+        ? brands.filter((b) => b.latest_snapshot?.source_type === "real")
+        : brands
+      ).filter((b) => !hiddenBrands.has(b.name)),
+    [brands, showRealOnly, hiddenBrands],
+  );
 
   return (
     <Box>

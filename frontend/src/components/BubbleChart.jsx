@@ -11,7 +11,7 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
     const updateDimensions = () => {
       if (svgRef.current) {
         const width = svgRef.current.parentElement.offsetWidth;
-        setDimensions({ width, height: Math.max(500, width * 0.6) });
+        setDimensions({ width, height: Math.max(550, width * 0.65) });
       }
     };
     updateDimensions();
@@ -57,23 +57,33 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       brands,
       (b) => b.latest_snapshot?.total_volume || 0,
     );
-    const minVolume = d3.min(
+    const totalVolume = d3.sum(
       brands,
       (b) => b.latest_snapshot?.total_volume || 0,
     );
 
+    // Dynamically size bubbles to fill ~72% of the canvas area.
+    // With scaleSqrt anchored at 0: r = maxRadius * sqrt(v / maxVolume)
+    // Total circle area = π * maxRadius² * (totalVolume / maxVolume)
+    // Solving for maxRadius: sqrt(fillRatio * W * H * maxVolume / (π * totalVolume))
+    const fillRatio = 0.61; // 15% smaller than previous 0.72
+    const maxRadius = Math.sqrt(
+      (fillRatio * width * height * maxVolume) / (Math.PI * totalVolume),
+    );
+    const minRadius = Math.max(20, maxRadius * 0.22);
+
     const radiusScale = d3
       .scaleSqrt()
-      .domain([minVolume, maxVolume])
-      .range([30, 90]);
+      .domain([0, maxVolume])
+      .range([0, maxRadius]);
 
     const nodes = brands.map((brand) => ({
       ...brand,
-      radius: radiusScale(brand.latest_snapshot?.total_volume || 0),
+      radius: Math.max(minRadius, radiusScale(brand.latest_snapshot?.total_volume || 0)),
       sentiment: brand.latest_snapshot?.sentiment_score || 0,
       volume: brand.latest_snapshot?.total_volume || 0,
-      x: width / 2 + (Math.random() - 0.5) * 200,
-      y: height / 2 + (Math.random() - 0.5) * 200,
+      x: width / 2 + (Math.random() - 0.5) * width * 0.7,
+      y: height / 2 + (Math.random() - 0.5) * height * 0.7,
       // Each bubble gets its own wander phase so they drift independently
       wanderAngle: Math.random() * Math.PI * 2,
       wanderSpeed: 0.008 + Math.random() * 0.006,
@@ -94,16 +104,19 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
 
     const simulation = d3
       .forceSimulation(nodes)
-      .alphaDecay(0)          // never cool down — simulation runs forever
-      .velocityDecay(0.35)    // fluid/floaty friction (lower = more drift, higher = snappy)
+      .alphaDecay(0)        // never cool down — simulation runs forever
+      .velocityDecay(0.35)  // fluid/floaty friction
       .force("wander", wanderForce)
-      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.012))
+      // Repulsion between bubbles — pushes them apart so they don't clamp
+      .force("repulsion", d3.forceManyBody().strength(-18))
+      // Gentle gravity toward center — weaker than before, repulsion counters it
+      .force("x", d3.forceX(width / 2).strength(0.015))
+      .force("y", d3.forceY(height / 2).strength(0.015))
+      // Collision with generous gap so bubbles breathe
       .force(
         "collision",
-        d3.forceCollide((d) => d.radius + 3).strength(0.7),
-      )
-      .force("x", d3.forceX(width / 2).strength(0.018))
-      .force("y", d3.forceY(height / 2).strength(0.018));
+        d3.forceCollide((d) => d.radius + 10).strength(0.85),
+      );
 
     simulationRef.current = simulation;
 
