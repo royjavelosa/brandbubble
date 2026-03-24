@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="RJ monogram favicon accent">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111111"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#g)"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- R -->
+    <path d="M28 24 V104" stroke="#ffffff" stroke-width="14"/>
+    <path d="M28 24 H58 C72 24 82 34 82 48 C82 61 72 70 58 70 H28" stroke="#ffffff" stroke-width="14"/>
+    <path d="M56 70 L84 104" stroke="#ffffff" stroke-width="14"/>
+
+    <!-- J -->
+    <path d="M100 24 V82 C100 96 90 106 74 106 C61 106 51 99 47 88" stroke="#7dd3fc" stroke-width="14"/>
+  </g>
+</svg>
