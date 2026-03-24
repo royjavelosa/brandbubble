@@ -7,6 +7,7 @@ import {
   Spinner,
   Center,
   HStack,
+  VStack,
   Switch,
   FormLabel,
 } from "@chakra-ui/react";
@@ -88,14 +89,32 @@ function Dashboard({ onSelectBrand }) {
         borderBottom="1px solid"
         borderColor="gray.700"
         px={6}
-        py={4}
+        py={5}
       >
         <HStack justify="space-between" align="center">
-          <HStack spacing={3}>
-            <Text fontSize="2xl">🫧</Text>
-            <Heading size="md" color="white">
-              BrandBubble
-            </Heading>
+          <HStack spacing={3} align="center">
+            <Text fontSize="5xl" lineHeight="1" alignSelf="stretch" display="flex" alignItems="center">
+              🫧
+            </Text>
+            <VStack align="flex-start" spacing={0}>
+              <Heading size="3xl" color="white" lineHeight="1.1">
+                BrandBubble
+              </Heading>
+              <Text fontSize="sm" color="gray.400" letterSpacing="wide">
+                Built 🫧 by{" "}
+                <Text
+                  as="a"
+                  href="https://www.royjavelosa.elesi.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="green.400"
+                  fontWeight="semibold"
+                  _hover={{ color: "green.300", textDecoration: "underline" }}
+                >
+                  Roy Javelosa
+                </Text>
+              </Text>
+            </VStack>
           </HStack>
           <HStack spacing={3}>
             <FormLabel
