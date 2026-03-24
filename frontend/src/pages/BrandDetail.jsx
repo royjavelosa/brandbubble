@@ -20,20 +20,28 @@ import {
   getBrandNarrative,
 } from "../services/api";
 
-function BrandDetail({ brand, onBack }) {
-  const [history, setHistory] = useState([]);
-  const [platforms, setPlatforms] = useState([]);
-  const [narrative, setNarrative] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [narrativeLoading, setNarrativeLoading] = useState(true);
+function BrandDetail({ brand, onBack, cache = {}, onCacheUpdate }) {
+  const cached = cache[brand.id];
+
+  const [history, setHistory] = useState(cached?.history || []);
+  const [platforms, setPlatforms] = useState(cached?.platforms || []);
+  const [narrative, setNarrative] = useState(cached?.narrative || "");
+  const [loading, setLoading] = useState(!cached);
+  const [narrativeLoading, setNarrativeLoading] = useState(!cached);
 
   useEffect(() => {
+    if (cache[brand.id]) return; // already cached, skip all fetches
+
+    let fetchedHistory = [], fetchedPlatforms = [], fetchedNarrative = "";
+
     const fetchData = async () => {
       try {
         const [historyData, platformData] = await Promise.all([
           getBrandHistory(brand.id),
           getBrandPlatforms(brand.id),
         ]);
+        fetchedHistory = historyData;
+        fetchedPlatforms = platformData;
         setHistory(historyData);
         setPlatforms(platformData);
       } catch (error) {
@@ -46,6 +54,7 @@ function BrandDetail({ brand, onBack }) {
     const fetchNarrative = async () => {
       try {
         const text = await getBrandNarrative(brand.id);
+        fetchedNarrative = text;
         setNarrative(text);
       } catch (error) {
         console.error("Error fetching narrative:", error);
@@ -54,8 +63,13 @@ function BrandDetail({ brand, onBack }) {
       }
     };
 
-    fetchData();
-    fetchNarrative();
+    Promise.all([fetchData(), fetchNarrative()]).then(() => {
+      onCacheUpdate?.(brand.id, {
+        history: fetchedHistory,
+        platforms: fetchedPlatforms,
+        narrative: fetchedNarrative,
+      });
+    });
   }, [brand.id]);
 
   const latestSnapshot = brand.latest_snapshot;
