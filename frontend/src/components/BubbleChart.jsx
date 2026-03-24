@@ -75,12 +75,12 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
         .attr("r", "50%");
 
       grad.append("stop").attr("offset", "0%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.58);
-      grad.append("stop").attr("offset", "75%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.58);
-      grad.append("stop").attr("offset", "86%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.8);
-      grad.append("stop").attr("offset", "94%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.40);
+      grad.append("stop").attr("offset", "78%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.40);
+      grad.append("stop").attr("offset", "88%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.78);
+      grad.append("stop").attr("offset", "95%")
         .attr("stop-color", baseColor).attr("stop-opacity", 0.97);
       grad.append("stop").attr("offset", "100%")
         .attr("stop-color", baseColor).attr("stop-opacity", 1.0);
