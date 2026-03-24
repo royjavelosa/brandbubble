@@ -23,13 +23,13 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
     if (!brands || brands.length === 0) return;
 
     const getSentimentColor = (score) => {
-      if (score >= 0.3) {
-        const intensity = Math.min((score - 0.3) / 0.7, 1);
+      if (score >= 0.1) {
+        const intensity = Math.min((score - 0.1) / 0.9, 1);
         const g = Math.round(150 + intensity * 105);
         return `rgb(0, ${g}, 80)`;
       }
-      if (score <= -0.3) {
-        const intensity = Math.min((-score - 0.3) / 0.7, 1);
+      if (score <= -0.1) {
+        const intensity = Math.min((-score - 0.1) / 0.9, 1);
         const r = Math.round(150 + intensity * 105);
         return `rgb(${r}, 50, 50)`;
       }
@@ -49,8 +49,14 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
 
     const defs = svg.append("defs");
 
-    const maxVolume = d3.max(brands, (b) => b.latest_snapshot?.total_volume || 0);
-    const totalVolume = d3.sum(brands, (b) => b.latest_snapshot?.total_volume || 0);
+    const maxVolume = d3.max(
+      brands,
+      (b) => b.latest_snapshot?.total_volume || 0,
+    );
+    const totalVolume = d3.sum(
+      brands,
+      (b) => b.latest_snapshot?.total_volume || 0,
+    );
 
     const fillRatio = 0.61;
     const maxRadius = Math.sqrt(
@@ -64,32 +70,53 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .range([0, maxRadius]);
 
     const nodes = brands.map((brand) => {
-      const baseColor = getSentimentColor(brand.latest_snapshot?.sentiment_score || 0);
+      const baseColor = getSentimentColor(
+        brand.latest_snapshot?.sentiment_score || 0,
+      );
       const gradId = `grad-${brand.name.replace(/[^a-zA-Z0-9]/g, "")}`;
 
       // Transparent dark center → color builds up near the edge only
       const grad = defs
         .append("radialGradient")
         .attr("id", gradId)
-        .attr("cx", "50%").attr("cy", "50%")
+        .attr("cx", "50%")
+        .attr("cy", "50%")
         .attr("r", "50%");
 
-      grad.append("stop").attr("offset", "0%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.22);
-      grad.append("stop").attr("offset", "78%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.22);
-      grad.append("stop").attr("offset", "88%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.78);
-      grad.append("stop").attr("offset", "95%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.97);
-      grad.append("stop").attr("offset", "100%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 1.0);
+      grad
+        .append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", baseColor)
+        .attr("stop-opacity", 0.22);
+      grad
+        .append("stop")
+        .attr("offset", "78%")
+        .attr("stop-color", baseColor)
+        .attr("stop-opacity", 0.22);
+      grad
+        .append("stop")
+        .attr("offset", "88%")
+        .attr("stop-color", baseColor)
+        .attr("stop-opacity", 0.78);
+      grad
+        .append("stop")
+        .attr("offset", "95%")
+        .attr("stop-color", baseColor)
+        .attr("stop-opacity", 0.97);
+      grad
+        .append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", baseColor)
+        .attr("stop-opacity", 1.0);
 
       return {
         ...brand,
         gradId,
         baseColor,
-        radius: Math.max(minRadius, radiusScale(brand.latest_snapshot?.total_volume || 0)),
+        radius: Math.max(
+          minRadius,
+          radiusScale(brand.latest_snapshot?.total_volume || 0),
+        ),
         sentiment: brand.latest_snapshot?.sentiment_score || 0,
         volume: brand.latest_snapshot?.total_volume || 0,
         x: width / 2 + (Math.random() - 0.5) * width * 0.7,
@@ -132,16 +159,21 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .style("cursor", "pointer")
       .on("click", (event, d) => onSelectBrand(d))
       .on("mouseover", function (event, d) {
-        if (highlightedBrands.size > 0 && !highlightedBrands.has(d.name)) return;
-        d3.select(this).select("circle")
-          .transition().duration(180)
+        if (highlightedBrands.size > 0 && !highlightedBrands.has(d.name))
+          return;
+        d3.select(this)
+          .select("circle")
+          .transition()
+          .duration(180)
           .attr("stroke", "white")
           .attr("stroke-width", 2)
           .attr("stroke-opacity", 0.85);
       })
       .on("mouseout", function (event, d) {
-        d3.select(this).select("circle")
-          .transition().duration(220)
+        d3.select(this)
+          .select("circle")
+          .transition()
+          .duration(220)
           .attr("stroke", d.baseColor)
           .attr("stroke-width", 1)
           .attr("stroke-opacity", getOpacity(d.name) * 0.9);
