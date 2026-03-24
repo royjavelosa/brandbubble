@@ -100,8 +100,6 @@ function NarrativeCard({ narrative, loading, brand }) {
       borderRadius="lg"
       px={6}
       py={4}
-      borderLeft="4px solid"
-      borderColor="green.400"
     >
       {brand && (
         <Text
