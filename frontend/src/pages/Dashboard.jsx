@@ -92,7 +92,7 @@ function Dashboard({ onSelectBrand }) {
         py={5}
       >
         <HStack justify="space-between" align="center">
-          <HStack spacing={3} align="center">
+          <HStack spacing={1} align="center">
             <Text fontSize="7xl" lineHeight="1" alignSelf="stretch" display="flex" alignItems="center">
               🫧
             </Text>

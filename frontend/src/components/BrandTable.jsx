@@ -19,7 +19,7 @@ const DOT_COLORS = {
 };
 
 const TYPE_LABELS = {
-  pmg_client: "PMG Client",
+  pmg_client: "Client",
   competitor: "Competitor",
   other: "Other",
 };
