@@ -15,15 +15,13 @@ supabase = create_client(
 DAYS_BACK = 30
 TODAY = date.today()
 
-# Brand personality profiles
-# Each brand has a base sentiment and volume profile
-# This makes the mock data feel realistic and story-driven
 BRAND_PROFILES = {
+    # PMG Clients
     'nike': {
         'base_sentiment': 0.65,
         'base_volume': 85000,
         'volatility': 0.15,
-        'trend': 'spike',       # spikes mid-period then decays
+        'trend': 'spike',
         'spike_day': 18,
         'spike_multiplier': 2.8
     },
@@ -31,7 +29,7 @@ BRAND_PROFILES = {
         'base_sentiment': 0.72,
         'base_volume': 120000,
         'volatility': 0.08,
-        'trend': 'stable',      # consistently high, slow growth
+        'trend': 'stable',
         'spike_day': None,
         'spike_multiplier': 1.0
     },
@@ -39,7 +37,7 @@ BRAND_PROFILES = {
         'base_sentiment': 0.58,
         'base_volume': 45000,
         'volatility': 0.12,
-        'trend': 'building',    # slowly building momentum
+        'trend': 'building',
         'spike_day': None,
         'spike_multiplier': 1.0
     },
@@ -47,7 +45,7 @@ BRAND_PROFILES = {
         'base_sentiment': 0.41,
         'base_volume': 18000,
         'volatility': 0.10,
-        'trend': 'backlash',    # negative trend, recovering
+        'trend': 'backlash',
         'spike_day': 22,
         'spike_multiplier': 1.5
     },
@@ -79,14 +77,102 @@ BRAND_PROFILES = {
         'base_sentiment': 0.69,
         'base_volume': 32000,
         'volatility': 0.13,
-        'trend': 'decay',       # peaked early, slowly declining
+        'trend': 'decay',
         'spike_day': 28,
         'spike_multiplier': 2.0
-    }
+    },
+    # Competitors
+    'adidas': {
+        'base_sentiment': 0.61,
+        'base_volume': 72000,
+        'volatility': 0.13,
+        'trend': 'stable',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'underarmour': {
+        'base_sentiment': 0.48,
+        'base_volume': 35000,
+        'volatility': 0.14,
+        'trend': 'decay',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'samsung': {
+        'base_sentiment': 0.59,
+        'base_volume': 95000,
+        'volatility': 0.11,
+        'trend': 'spike',
+        'spike_day': 15,
+        'spike_multiplier': 1.8
+    },
+    'google': {
+        'base_sentiment': 0.63,
+        'base_volume': 110000,
+        'volatility': 0.09,
+        'trend': 'stable',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'ulta': {
+        'base_sentiment': 0.66,
+        'base_volume': 38000,
+        'volatility': 0.12,
+        'trend': 'building',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'traderjoes': {
+        'base_sentiment': 0.74,
+        'base_volume': 28000,
+        'volatility': 0.10,
+        'trend': 'stable',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'hyperice': {
+        'base_sentiment': 0.71,
+        'base_volume': 14000,
+        'volatility': 0.11,
+        'trend': 'building',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'hrblock': {
+        'base_sentiment': 0.44,
+        'base_volume': 22000,
+        'volatility': 0.13,
+        'trend': 'spike',
+        'spike_day': 20,
+        'spike_multiplier': 2.2
+    },
+    'marriott': {
+        'base_sentiment': 0.57,
+        'base_volume': 42000,
+        'volatility': 0.12,
+        'trend': 'building',
+        'spike_day': None,
+        'spike_multiplier': 1.0
+    },
+    'equifax': {
+        'base_sentiment': 0.35,
+        'base_volume': 19000,
+        'volatility': 0.14,
+        'trend': 'backlash',
+        'spike_day': 25,
+        'spike_multiplier': 1.6
+    },
+    # Standalone
+    'peloton': {
+        'base_sentiment': -0.45,
+        'base_volume': 38000,
+        'volatility': 0.18,
+        'trend': 'decay',
+        'spike_day': 20,
+        'spike_multiplier': 1.4
+    },
 }
 
-# Platform distribution percentages
-# How each platform contributes to total volume
 PLATFORM_DISTRIBUTION = {
     'youtube':   {'volume_pct': 0.20, 'sentiment_offset': 0.05},
     'tiktok':    {'volume_pct': 0.40, 'sentiment_offset': -0.03},
@@ -109,7 +195,6 @@ def calculate_volume(profile, day_index, period):
     spike_day = profile['spike_day']
     spike_mult = profile['spike_multiplier']
 
-    # Apply trend modifier
     if trend == 'building':
         trend_modifier = 1.0 + (day_index / DAYS_BACK) * 0.4
     elif trend == 'decay':
@@ -119,19 +204,14 @@ def calculate_volume(profile, day_index, period):
     else:
         trend_modifier = 1.0
 
-    # Apply spike if applicable
     spike_modifier = 1.0
     if spike_day:
         distance = abs(day_index - (DAYS_BACK - spike_day))
         if distance <= 3:
             spike_modifier = spike_mult - (distance * 0.4)
 
-    # Evening is slightly higher than morning
     period_modifier = 1.0 if period == 'morning' else 1.12
-
-    # Add randomness
     noise = 1.0 + random.uniform(-volatility, volatility)
-
     volume = int(base * trend_modifier * spike_modifier * period_modifier * noise)
     return max(volume, 1000)
 
@@ -141,24 +221,19 @@ def calculate_sentiment(profile, day_index, period):
     trend = profile['trend']
     spike_day = profile['spike_day']
 
-    # Backlash brands have lower sentiment early
     if trend == 'backlash':
         if day_index < 15:
             base = base - 0.15
         else:
             base = base + 0.05
 
-    # Spike events can go either way
     if spike_day:
         distance = abs(day_index - (DAYS_BACK - spike_day))
         if distance <= 2:
             base = base + 0.08
 
-    # Add small randomness
     noise = random.uniform(-volatility * 0.5, volatility * 0.5)
     sentiment = round(base + noise, 3)
-
-    # Clamp between -1.0 and 1.0
     return max(-1.0, min(1.0, sentiment))
 
 def seed_data():
@@ -171,6 +246,7 @@ def seed_data():
 
     snapshots_inserted = 0
     metrics_inserted = 0
+    skipped = 0
 
     for day_index in range(DAYS_BACK):
         snapshot_date = TODAY - timedelta(days=(DAYS_BACK - day_index))
@@ -181,10 +257,21 @@ def seed_data():
                 if not profile:
                     continue
 
+                # Skip if snapshot already exists for this brand/date/period
+                existing = supabase.table('snapshots')\
+                    .select('id')\
+                    .eq('brand_id', brand_id)\
+                    .eq('snapshot_date', snapshot_date.isoformat())\
+                    .eq('period', period)\
+                    .limit(1)\
+                    .execute()
+                if existing.data:
+                    skipped += 1
+                    continue
+
                 volume = calculate_volume(profile, day_index, period)
                 sentiment = calculate_sentiment(profile, day_index, period)
 
-                # Insert snapshot
                 snapshot_result = supabase.table('snapshots').insert({
                     'brand_id': brand_id,
                     'snapshot_date': snapshot_date.isoformat(),
@@ -197,7 +284,6 @@ def seed_data():
                 snapshot_id = snapshot_result.data[0]['id']
                 snapshots_inserted += 1
 
-                # Insert platform metrics
                 for platform_name, platform_id in platforms.items():
                     dist = PLATFORM_DISTRIBUTION.get(platform_name, {})
                     platform_volume = int(volume * dist.get('volume_pct', 0.25))
@@ -207,7 +293,6 @@ def seed_data():
                     )
                     platform_sentiment = max(-1.0, min(1.0, platform_sentiment))
 
-                    # Simulate engagement metrics
                     like_count = int(platform_volume * random.uniform(0.08, 0.25))
                     share_count = int(platform_volume * random.uniform(0.02, 0.08))
                     comment_count = int(platform_volume * random.uniform(0.03, 0.10))
@@ -230,11 +315,12 @@ def seed_data():
 
                     metrics_inserted += 1
 
-        print(f"Day {day_index + 1}/{DAYS_BACK} seeded ({snapshot_date})")
+        print(f"Day {day_index + 1}/{DAYS_BACK} seeded ({snapshot_date}) | Inserted: {snapshots_inserted} | Skipped: {skipped}")
 
     print(f"\nDone!")
     print(f"Snapshots inserted: {snapshots_inserted}")
     print(f"Platform metrics inserted: {metrics_inserted}")
+    print(f"Skipped (already existed): {skipped}")
 
 if __name__ == '__main__':
     seed_data()

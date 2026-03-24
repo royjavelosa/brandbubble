@@ -8,13 +8,15 @@ function App() {
 
   return (
     <Box bg="gray.900" minH="100vh">
-      {selectedBrand ? (
+      {/* Always mounted — preserves bubble state and narrative cache on back-nav */}
+      <Box display={selectedBrand ? "none" : "block"}>
+        <Dashboard onSelectBrand={setSelectedBrand} />
+      </Box>
+      {selectedBrand && (
         <BrandDetail
           brand={selectedBrand}
           onBack={() => setSelectedBrand(null)}
         />
-      ) : (
-        <Dashboard onSelectBrand={setSelectedBrand} />
       )}
     </Box>
   );

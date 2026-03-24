@@ -93,7 +93,7 @@ function Dashboard({ onSelectBrand }) {
       >
         <HStack justify="space-between" align="center">
           <HStack spacing={1} align="center">
-            <Text fontSize="7xl" lineHeight="1" alignSelf="stretch" display="flex" alignItems="center">
+            <Text fontSize="6xl" lineHeight="1" alignSelf="stretch" display="flex" alignItems="center">
               🫧
             </Text>
             <VStack align="flex-start" spacing={0}>
