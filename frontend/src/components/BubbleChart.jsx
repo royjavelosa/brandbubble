@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { Box, Text } from "@chakra-ui/react";
 
-function BubbleChart({ brands, onSelectBrand }) {
+function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
   const svgRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });
 
@@ -35,6 +35,16 @@ function BubbleChart({ brands, onSelectBrand }) {
       return "rgb(200, 160, 0)";
     };
 
+    const getOpacity = (name) => {
+      if (highlightedBrands.size === 0) return 0.85;
+      return highlightedBrands.has(name) ? 1 : 0.15;
+    };
+
+    const getStrokeOpacity = (name) => {
+      if (highlightedBrands.size === 0) return 0.4;
+      return highlightedBrands.has(name) ? 0.8 : 0.1;
+    };
+
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
@@ -42,8 +52,14 @@ function BubbleChart({ brands, onSelectBrand }) {
 
     svg.attr("width", width).attr("height", height);
 
-    const maxVolume = d3.max(brands, (b) => b.latest_snapshot?.total_volume || 0);
-    const minVolume = d3.min(brands, (b) => b.latest_snapshot?.total_volume || 0);
+    const maxVolume = d3.max(
+      brands,
+      (b) => b.latest_snapshot?.total_volume || 0,
+    );
+    const minVolume = d3.min(
+      brands,
+      (b) => b.latest_snapshot?.total_volume || 0,
+    );
 
     const radiusScale = d3
       .scaleSqrt()
@@ -63,7 +79,10 @@ function BubbleChart({ brands, onSelectBrand }) {
       .forceSimulation(nodes)
       .force("charge", d3.forceManyBody().strength(5))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide((d) => d.radius + 4))
+      .force(
+        "collision",
+        d3.forceCollide((d) => d.radius + 4),
+      )
       .force("x", d3.forceX(width / 2).strength(0.05))
       .force("y", d3.forceY(height / 2).strength(0.05));
 
@@ -83,15 +102,25 @@ function BubbleChart({ brands, onSelectBrand }) {
       .append("circle")
       .attr("r", (d) => d.radius)
       .attr("fill", (d) => getSentimentColor(d.sentiment))
-      .attr("fill-opacity", 0.85)
+      .attr("fill-opacity", (d) => getOpacity(d.name))
       .attr("stroke", (d) => getSentimentColor(d.sentiment))
       .attr("stroke-width", 2)
-      .attr("stroke-opacity", 0.4)
-      .on("mouseover", function () {
-        d3.select(this).attr("fill-opacity", 1).attr("stroke-opacity", 0.8);
+      .attr("stroke-opacity", (d) => getStrokeOpacity(d.name))
+      .on("mouseover", function (event, d) {
+        if (highlightedBrands.size === 0 || highlightedBrands.has(d.name)) {
+          d3.select(this).attr("fill-opacity", 1).attr("stroke-opacity", 0.8);
+        }
       })
-      .on("mouseout", function () {
-        d3.select(this).attr("fill-opacity", 0.85).attr("stroke-opacity", 0.4);
+      .on("mouseout", function (event, d) {
+        if (highlightedBrands.size === 0) {
+          d3.select(this)
+            .attr("fill-opacity", 0.85)
+            .attr("stroke-opacity", 0.4);
+        } else {
+          d3.select(this)
+            .attr("fill-opacity", highlightedBrands.has(d.name) ? 1 : 0.15)
+            .attr("stroke-opacity", highlightedBrands.has(d.name) ? 0.8 : 0.1);
+        }
       });
 
     bubbles
@@ -121,7 +150,7 @@ function BubbleChart({ brands, onSelectBrand }) {
         return `translate(${d.x}, ${d.y})`;
       });
     });
-  }, [brands, dimensions, onSelectBrand]);
+  }, [brands, dimensions, onSelectBrand, highlightedBrands]);
 
   if (!brands || brands.length === 0) {
     return (

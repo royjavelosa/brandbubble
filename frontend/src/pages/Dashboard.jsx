@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import NarrativeCard from "../components/NarrativeCard";
 import BubbleChart from "../components/BubbleChart";
+import BrandTable from "../components/BrandTable";
 import { getBrands, getGlobalNarrative } from "../services/api";
 
 function Dashboard({ onSelectBrand }) {
@@ -20,6 +21,8 @@ function Dashboard({ onSelectBrand }) {
   const [loading, setLoading] = useState(true);
   const [narrativeLoading, setNarrativeLoading] = useState(true);
   const [showRealOnly, setShowRealOnly] = useState(false);
+  const [hiddenBrands, setHiddenBrands] = useState(new Set());
+  const [highlightedBrands, setHighlightedBrands] = useState(new Set());
 
   useEffect(() => {
     fetchBrands();
@@ -48,9 +51,29 @@ function Dashboard({ onSelectBrand }) {
     }
   };
 
-  const filteredBrands = showRealOnly
-    ? brands.filter((b) => b.latest_snapshot?.source_type === "real")
-    : brands;
+  const toggleVisibility = (brandName) => {
+    setHiddenBrands((prev) => {
+      const next = new Set(prev);
+      next.has(brandName) ? next.delete(brandName) : next.add(brandName);
+      return next;
+    });
+  };
+
+  const toggleHighlight = (brandName) => {
+    setHighlightedBrands((prev) => {
+      const next = new Set(prev);
+      next.has(brandName) ? next.delete(brandName) : next.add(brandName);
+      return next;
+    });
+  };
+
+  const resetHighlights = () => setHighlightedBrands(new Set());
+
+  const filteredBrands = (
+    showRealOnly
+      ? brands.filter((b) => b.latest_snapshot?.source_type === "real")
+      : brands
+  ).filter((b) => !hiddenBrands.has(b.name));
 
   return (
     <Box>
@@ -100,9 +123,27 @@ function Dashboard({ onSelectBrand }) {
             <Spinner size="xl" color="green.400" />
           </Center>
         ) : (
-          <BubbleChart brands={filteredBrands} onSelectBrand={onSelectBrand} />
+          <BubbleChart
+            brands={filteredBrands}
+            onSelectBrand={onSelectBrand}
+            highlightedBrands={highlightedBrands}
+          />
         )}
       </Container>
+
+      {/* Brand Table */}
+      {!loading && (
+        <Container maxW="container.xl" pb={8}>
+          <BrandTable
+            brands={brands}
+            hiddenBrands={hiddenBrands}
+            highlightedBrands={highlightedBrands}
+            onToggleVisibility={toggleVisibility}
+            onToggleHighlight={toggleHighlight}
+            onResetHighlights={resetHighlights}
+          />
+        </Container>
+      )}
     </Box>
   );
 }
