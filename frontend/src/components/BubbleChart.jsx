@@ -49,43 +49,6 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
 
     const defs = svg.append("defs");
 
-    // Shared blur filter — spreads the glow-behind circle outward past the edge
-    const glowFilter = defs.append("filter")
-      .attr("id", "outer-glow")
-      .attr("x", "-60%").attr("y", "-60%")
-      .attr("width", "220%").attr("height", "220%");
-    glowFilter.append("feGaussianBlur")
-      .attr("in", "SourceGraphic")
-      .attr("stdDeviation", "12");
-
-    // Hover breathing + white halo via CSS — no D3 event handler needed for visuals
-    defs.append("style").text(`
-      .bubble-group { cursor: pointer; }
-
-      .glow-behind {
-        opacity: 0.55;
-        transition: opacity 0.25s ease;
-      }
-
-      .bubble-group:hover .glow-behind {
-        animation: breathe 1.4s ease-in-out infinite;
-      }
-
-      .main-circle {
-        transition: filter 0.2s ease;
-      }
-
-      .bubble-group:hover .main-circle {
-        filter: drop-shadow(0 0 6px rgba(255,255,255,0.55))
-                drop-shadow(0 0 14px rgba(255,255,255,0.3));
-      }
-
-      @keyframes breathe {
-        0%, 100% { opacity: 0.4; }
-        50%       { opacity: 0.9; }
-      }
-    `);
-
     const maxVolume = d3.max(brands, (b) => b.latest_snapshot?.total_volume || 0);
     const totalVolume = d3.sum(brands, (b) => b.latest_snapshot?.total_volume || 0);
 
@@ -104,21 +67,21 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       const baseColor = getSentimentColor(brand.latest_snapshot?.sentiment_score || 0);
       const gradId = `grad-${brand.name.replace(/[^a-zA-Z0-9]/g, "")}`;
 
-      // Radial gradient: transparent center bleeding into colored ring at the edge
-      // This is the cryptobubbles look — background shows through the center
-      const grad = defs.append("radialGradient")
+      // Transparent dark center → color builds up near the edge only
+      const grad = defs
+        .append("radialGradient")
         .attr("id", gradId)
         .attr("cx", "50%").attr("cy", "50%")
         .attr("r", "50%");
 
       grad.append("stop").attr("offset", "0%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.04);
-      grad.append("stop").attr("offset", "52%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.04);
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.0);
+      grad.append("stop").attr("offset", "55%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.0);
       grad.append("stop").attr("offset", "72%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.35);
-      grad.append("stop").attr("offset", "88%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.82);
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.3);
+      grad.append("stop").attr("offset", "87%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.8);
       grad.append("stop").attr("offset", "100%")
         .attr("stop-color", baseColor).attr("stop-opacity", 1.0);
 
@@ -166,40 +129,34 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .data(nodes)
       .enter()
       .append("g")
-      .attr("class", "bubble-group")
-      .on("click", (event, d) => onSelectBrand(d));
+      .style("cursor", "pointer")
+      // Colored outer glow via drop-shadow — only blooms outside the circle,
+      // never bleeds into the transparent center
+      .style("filter", (d) => `drop-shadow(0 0 10px ${d.baseColor})`)
+      .style("transition", "filter 0.2s ease")
+      .on("click", (event, d) => onSelectBrand(d))
+      .on("mouseover", function (event, d) {
+        if (highlightedBrands.size > 0 && !highlightedBrands.has(d.name)) return;
+        // Stronger colored glow + white halo on hover
+        d3.select(this).style(
+          "filter",
+          `drop-shadow(0 0 18px ${d.baseColor}) drop-shadow(0 0 8px rgba(255,255,255,0.55))`,
+        );
+      })
+      .on("mouseout", function (event, d) {
+        d3.select(this).style("filter", `drop-shadow(0 0 10px ${d.baseColor})`);
+      });
 
-    // Layer 1: blurred colored circle behind — creates the outer glow bloom
     bubbles
       .append("circle")
-      .attr("class", "glow-behind")
-      .attr("r", (d) => d.radius)
-      .attr("fill", (d) => d.baseColor)
-      .attr("fill-opacity", (d) => getOpacity(d.name))
-      .attr("filter", "url(#outer-glow)");
-
-    // Layer 2: the actual visible bubble — gradient ring + thin white stroke
-    bubbles
-      .append("circle")
-      .attr("class", "main-circle")
       .attr("r", (d) => d.radius)
       .attr("fill", (d) => `url(#${d.gradId})`)
       .attr("fill-opacity", (d) => getOpacity(d.name))
+      // Colored stroke for a crisp glowing ring edge
       .attr("stroke", (d) => d.baseColor)
-      .attr("stroke-width", 1.5)
-      .attr("stroke-opacity", (d) => getOpacity(d.name) * 0.6)
-      .on("mouseover", function (event, d) {
-        if (highlightedBrands.size > 0 && !highlightedBrands.has(d.name)) return;
-        d3.select(this.parentNode).select(".glow-behind").attr("fill-opacity", 1);
-        d3.select(this).attr("fill-opacity", 1).attr("stroke-opacity", 0.9);
-      })
-      .on("mouseout", function (event, d) {
-        const op = getOpacity(d.name);
-        d3.select(this.parentNode).select(".glow-behind").attr("fill-opacity", op);
-        d3.select(this).attr("fill-opacity", op).attr("stroke-opacity", op * 0.6);
-      });
+      .attr("stroke-width", 2)
+      .attr("stroke-opacity", (d) => getOpacity(d.name) * 0.9);
 
-    // Labels
     bubbles
       .append("text")
       .attr("text-anchor", "middle")
