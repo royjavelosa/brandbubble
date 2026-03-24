@@ -75,13 +75,13 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
         .attr("r", "50%");
 
       grad.append("stop").attr("offset", "0%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.0);
-      grad.append("stop").attr("offset", "55%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.0);
-      grad.append("stop").attr("offset", "72%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.3);
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.18);
+      grad.append("stop").attr("offset", "50%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.18);
+      grad.append("stop").attr("offset", "70%")
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.42);
       grad.append("stop").attr("offset", "87%")
-        .attr("stop-color", baseColor).attr("stop-opacity", 0.8);
+        .attr("stop-color", baseColor).attr("stop-opacity", 0.85);
       grad.append("stop").attr("offset", "100%")
         .attr("stop-color", baseColor).attr("stop-opacity", 1.0);
 
@@ -136,14 +136,14 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
         d3.select(this).select("circle")
           .transition().duration(180)
           .attr("stroke", "white")
-          .attr("stroke-width", 3)
-          .attr("stroke-opacity", 0.9);
+          .attr("stroke-width", 2)
+          .attr("stroke-opacity", 0.85);
       })
       .on("mouseout", function (event, d) {
         d3.select(this).select("circle")
           .transition().duration(220)
           .attr("stroke", d.baseColor)
-          .attr("stroke-width", 2)
+          .attr("stroke-width", 1)
           .attr("stroke-opacity", getOpacity(d.name) * 0.9);
       });
 
@@ -154,7 +154,7 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .attr("fill-opacity", (d) => getOpacity(d.name))
       // Colored stroke for a crisp glowing ring edge
       .attr("stroke", (d) => d.baseColor)
-      .attr("stroke-width", 2)
+      .attr("stroke-width", 1)
       .attr("stroke-opacity", (d) => getOpacity(d.name) * 0.9);
 
     bubbles
