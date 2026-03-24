@@ -106,7 +106,7 @@ BRAND_PROFILES = {
     },
     # Standalone
     'peloton': {
-        'base_sentiment': -0.22,
+        'base_sentiment': -0.45,
         'base_volume': 38000,
         'volatility': 0.18,
     },
