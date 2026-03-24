@@ -130,21 +130,21 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .enter()
       .append("g")
       .style("cursor", "pointer")
-      // Colored outer glow via drop-shadow — only blooms outside the circle,
-      // never bleeds into the transparent center
-      .style("filter", (d) => `drop-shadow(0 0 10px ${d.baseColor})`)
-      .style("transition", "filter 0.2s ease")
       .on("click", (event, d) => onSelectBrand(d))
       .on("mouseover", function (event, d) {
         if (highlightedBrands.size > 0 && !highlightedBrands.has(d.name)) return;
-        // Stronger colored glow + white halo on hover
-        d3.select(this).style(
-          "filter",
-          `drop-shadow(0 0 18px ${d.baseColor}) drop-shadow(0 0 8px rgba(255,255,255,0.55))`,
-        );
+        d3.select(this).select("circle")
+          .transition().duration(180)
+          .attr("stroke", "white")
+          .attr("stroke-width", 3)
+          .attr("stroke-opacity", 0.9);
       })
       .on("mouseout", function (event, d) {
-        d3.select(this).style("filter", `drop-shadow(0 0 10px ${d.baseColor})`);
+        d3.select(this).select("circle")
+          .transition().duration(220)
+          .attr("stroke", d.baseColor)
+          .attr("stroke-width", 2)
+          .attr("stroke-opacity", getOpacity(d.name) * 0.9);
       });
 
     bubbles
