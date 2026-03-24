@@ -52,7 +52,6 @@ def health():
 def get_brands(x_api_key: str = Header(None)):
     verify_api_key(x_api_key)
     try:
-        # Get all active brands
         brands_result = supabase.table('brands')\
             .select('*')\
             .eq('is_active', True)\
@@ -62,7 +61,7 @@ def get_brands(x_api_key: str = Header(None)):
         enriched = []
 
         for brand in brands:
-            # Get latest snapshot for this brand
+            # Get latest snapshot
             snapshot_result = supabase.table('snapshots')\
                 .select('*')\
                 .eq('brand_id', brand['id'])\
@@ -73,10 +72,19 @@ def get_brands(x_api_key: str = Header(None)):
 
             latest_snapshot = snapshot_result.data[0] if snapshot_result.data else None
 
+            # Get brand_type from brand_properties
+            props_result = supabase.table('brand_properties')\
+                .select('key, value')\
+                .eq('brand_id', brand['id'])\
+                .execute()
+
+            properties = {p['key']: p['value'] for p in props_result.data}
+
             enriched.append({
                 'id': brand['id'],
                 'name': brand['name'],
                 'display_name': brand['display_name'],
+                'brand_type': properties.get('brand_type', 'pmg_client'),
                 'latest_snapshot': latest_snapshot
             })
 
