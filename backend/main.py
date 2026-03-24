@@ -214,7 +214,8 @@ Write a 2-3 sentence narrative for a marketing agency dashboard.
 Surface the most interesting pattern or contrast you see. 
 Include both obvious trends and non-obvious ones if present.
 Be specific about brand names and numbers.
-Do not use generic filler. If nothing is interesting, return an empty string."""
+Do not use generic filler. If nothing is interesting, return an empty string.
+Do not use em dashes (—). Use commas, periods, or rewrite the sentence instead."""
             }]
         )
 
@@ -331,6 +332,7 @@ Current platform breakdown:
 Write 1-2 sentences describing the most meaningful pattern in this data.
 Focus on: trend direction, peak moments, platform divergence, or unusual signals.
 Be specific with dates and numbers.
+Do not use em dashes (—). Use commas, periods, or rewrite the sentence instead.
 If there is nothing meaningful to say, return exactly: EMPTY"""
             }]
         )

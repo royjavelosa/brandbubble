@@ -143,9 +143,47 @@ function Dashboard({ onSelectBrand }) {
       {/* Bubble Chart */}
       <Container maxW="container.xl" py={4}>
         {loading ? (
-          <Center h="400px">
-            <Spinner size="xl" color="green.400" />
-          </Center>
+          <Box bg="gray.800" borderRadius="lg" overflow="hidden" position="relative">
+            <svg width="100%" height="420" style={{ display: "block" }}>
+              <style>{`
+                @keyframes bubblePulse {
+                  0%, 100% { opacity: 0.25; }
+                  50% { opacity: 0.6; }
+                }
+              `}</style>
+              {[
+                { cx: "18%", cy: "48%", r: 68 },
+                { cx: "36%", cy: "34%", r: 88 },
+                { cx: "54%", cy: "56%", r: 52 },
+                { cx: "69%", cy: "36%", r: 74 },
+                { cx: "83%", cy: "57%", r: 44 },
+                { cx: "14%", cy: "68%", r: 38 },
+                { cx: "47%", cy: "74%", r: 58 },
+                { cx: "64%", cy: "18%", r: 34 },
+              ].map((b, i) => (
+                <circle
+                  key={i}
+                  cx={b.cx}
+                  cy={b.cy}
+                  r={b.r}
+                  fill="rgba(255,255,255,0.05)"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1.5}
+                  style={{
+                    animation: `bubblePulse 2s ease-in-out ${i * 0.2}s infinite`,
+                  }}
+                />
+              ))}
+            </svg>
+            <Center position="absolute" bottom={4} left={0} right={0}>
+              <HStack spacing={2}>
+                <Spinner size="xs" color="green.500" />
+                <Text fontSize="sm" color="gray.500">
+                  Fetching brand sentiment data...
+                </Text>
+              </HStack>
+            </Center>
+          </Box>
         ) : (
           <BubbleChart
             brands={filteredBrands}

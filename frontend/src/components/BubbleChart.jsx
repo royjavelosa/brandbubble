@@ -36,37 +36,48 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       return "rgb(200, 160, 0)";
     };
 
-    const getOpacity = (name) => {
-      if (highlightedBrands.size === 0) return 0.85;
-      return highlightedBrands.has(name) ? 1 : 0.15;
+    // Helpers for gradient color stops
+    const parseRgb = (s) => {
+      const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      return m ? [+m[1], +m[2], +m[3]] : [128, 128, 128];
     };
+    const shiftRgb = ([r, g, b], amt) =>
+      `rgb(${Math.min(255, Math.max(0, r + amt))}, ${Math.min(255, Math.max(0, g + amt))}, ${Math.min(255, Math.max(0, b + amt))})`;
 
-    const getStrokeOpacity = (name) => {
-      if (highlightedBrands.size === 0) return 0.4;
-      return highlightedBrands.has(name) ? 0.8 : 0.1;
+    const getOpacity = (name) => {
+      if (highlightedBrands.size === 0) return 1;
+      return highlightedBrands.has(name) ? 1 : 0.15;
     };
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
     const { width, height } = dimensions;
-
     svg.attr("width", width).attr("height", height);
 
-    const maxVolume = d3.max(
-      brands,
-      (b) => b.latest_snapshot?.total_volume || 0,
-    );
-    const totalVolume = d3.sum(
-      brands,
-      (b) => b.latest_snapshot?.total_volume || 0,
-    );
+    // Breathing + hover keyframes injected once into the SVG
+    svg.append("defs").append("style").text(`
+      .bubble-circle {
+        transition: filter 0.2s ease;
+        animation: bubbleBreathe 3.5s ease-in-out infinite;
+      }
+      .bubble-circle:hover {
+        animation: none;
+        filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.75)) !important;
+        cursor: pointer;
+      }
+      @keyframes bubbleBreathe {
+        0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.1)); }
+        50%       { filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.28)); }
+      }
+    `);
 
-    // Dynamically size bubbles to fill ~72% of the canvas area.
-    // With scaleSqrt anchored at 0: r = maxRadius * sqrt(v / maxVolume)
-    // Total circle area = π * maxRadius² * (totalVolume / maxVolume)
-    // Solving for maxRadius: sqrt(fillRatio * W * H * maxVolume / (π * totalVolume))
-    const fillRatio = 0.61; // 15% smaller than previous 0.72
+    const defs = svg.select("defs");
+
+    const maxVolume = d3.max(brands, (b) => b.latest_snapshot?.total_volume || 0);
+    const totalVolume = d3.sum(brands, (b) => b.latest_snapshot?.total_volume || 0);
+
+    const fillRatio = 0.61;
     const maxRadius = Math.sqrt(
       (fillRatio * width * height * maxVolume) / (Math.PI * totalVolume),
     );
@@ -77,21 +88,46 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .domain([0, maxVolume])
       .range([0, maxRadius]);
 
-    const nodes = brands.map((brand) => ({
-      ...brand,
-      radius: Math.max(minRadius, radiusScale(brand.latest_snapshot?.total_volume || 0)),
-      sentiment: brand.latest_snapshot?.sentiment_score || 0,
-      volume: brand.latest_snapshot?.total_volume || 0,
-      x: width / 2 + (Math.random() - 0.5) * width * 0.7,
-      y: height / 2 + (Math.random() - 0.5) * height * 0.7,
-      // Each bubble gets its own wander phase so they drift independently
-      wanderAngle: Math.random() * Math.PI * 2,
-      wanderSpeed: 0.008 + Math.random() * 0.006,
-      wanderStrength: 0.25 + Math.random() * 0.2,
-    }));
+    const nodes = brands.map((brand) => {
+      const baseColor = getSentimentColor(brand.latest_snapshot?.sentiment_score || 0);
+      const [r, g, b] = parseRgb(baseColor);
+      const gradId = `grad-${brand.name.replace(/[^a-zA-Z0-9]/g, "")}`;
 
-    // Wander force: slowly rotates each bubble's personal drift angle each tick,
-    // applying a tiny nudge — produces continuous organic floating motion
+      // Radial gradient: bright highlight top-left → base color → darker edge
+      const grad = defs
+        .append("radialGradient")
+        .attr("id", gradId)
+        .attr("cx", "36%")
+        .attr("cy", "30%")
+        .attr("r", "68%")
+        .attr("fx", "36%")
+        .attr("fy", "30%");
+
+      grad.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", shiftRgb([r, g, b], 90));
+      grad.append("stop")
+        .attr("offset", "45%")
+        .attr("stop-color", baseColor);
+      grad.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", shiftRgb([r, g, b], -45));
+
+      return {
+        ...brand,
+        gradId,
+        baseColor,
+        radius: Math.max(minRadius, radiusScale(brand.latest_snapshot?.total_volume || 0)),
+        sentiment: brand.latest_snapshot?.sentiment_score || 0,
+        volume: brand.latest_snapshot?.total_volume || 0,
+        x: width / 2 + (Math.random() - 0.5) * width * 0.7,
+        y: height / 2 + (Math.random() - 0.5) * height * 0.7,
+        wanderAngle: Math.random() * Math.PI * 2,
+        wanderSpeed: 0.008 + Math.random() * 0.006,
+        wanderStrength: 0.25 + Math.random() * 0.2,
+      };
+    });
+
     function wanderForce() {
       nodes.forEach((node) => {
         node.wanderAngle += node.wanderSpeed;
@@ -104,19 +140,13 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
 
     const simulation = d3
       .forceSimulation(nodes)
-      .alphaDecay(0)        // never cool down — simulation runs forever
-      .velocityDecay(0.35)  // fluid/floaty friction
+      .alphaDecay(0)
+      .velocityDecay(0.35)
       .force("wander", wanderForce)
-      // Repulsion between bubbles — pushes them apart so they don't clamp
       .force("repulsion", d3.forceManyBody().strength(-18))
-      // Gentle gravity toward center — weaker than before, repulsion counters it
       .force("x", d3.forceX(width / 2).strength(0.015))
       .force("y", d3.forceY(height / 2).strength(0.015))
-      // Collision with generous gap so bubbles breathe
-      .force(
-        "collision",
-        d3.forceCollide((d) => d.radius + 10).strength(0.85),
-      );
+      .force("collision", d3.forceCollide((d) => d.radius + 10).strength(0.85));
 
     simulationRef.current = simulation;
 
@@ -128,33 +158,24 @@ function BubbleChart({ brands, onSelectBrand, highlightedBrands }) {
       .enter()
       .append("g")
       .style("cursor", "pointer")
-      .on("click", (event, d) => {
-        onSelectBrand(d);
-      });
+      .on("click", (event, d) => onSelectBrand(d));
 
     bubbles
       .append("circle")
+      .attr("class", "bubble-circle")
       .attr("r", (d) => d.radius)
-      .attr("fill", (d) => getSentimentColor(d.sentiment))
+      .attr("fill", (d) => `url(#${d.gradId})`)
       .attr("fill-opacity", (d) => getOpacity(d.name))
-      .attr("stroke", (d) => getSentimentColor(d.sentiment))
-      .attr("stroke-width", 2)
-      .attr("stroke-opacity", (d) => getStrokeOpacity(d.name))
+      // White semi-transparent rim for the gradient border look
+      .attr("stroke", "rgba(255, 255, 255, 0.35)")
+      .attr("stroke-width", 1.5)
       .on("mouseover", function (event, d) {
         if (highlightedBrands.size === 0 || highlightedBrands.has(d.name)) {
-          d3.select(this).attr("fill-opacity", 1).attr("stroke-opacity", 0.8);
+          d3.select(this).attr("fill-opacity", 1);
         }
       })
       .on("mouseout", function (event, d) {
-        if (highlightedBrands.size === 0) {
-          d3.select(this)
-            .attr("fill-opacity", 0.85)
-            .attr("stroke-opacity", 0.4);
-        } else {
-          d3.select(this)
-            .attr("fill-opacity", highlightedBrands.has(d.name) ? 1 : 0.15)
-            .attr("stroke-opacity", highlightedBrands.has(d.name) ? 0.8 : 0.1);
-        }
+        d3.select(this).attr("fill-opacity", getOpacity(d.name));
       });
 
     bubbles
